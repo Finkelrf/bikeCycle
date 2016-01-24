@@ -5,7 +5,7 @@
 #include "TimerOne.h"
 
 #define NUMBER_OF_BUSES 9
-#define NUMBER_OF_DISPLAYS 2
+#define NUMBER_OF_DISPLAYS 6
 
 void halTurnLedDisplayOn(uint8_t ledId,uint8_t displayId);
 void halTurnOffDisplay(uint8_t displayId);
@@ -14,7 +14,7 @@ void halTurnOnDisplay(uint8_t displayId);
 void halTurnSingleLedDisplayOn(char ledLetter,int displayId);
 
 void halInitDisplay();
-uint8_t halGetDisplayMultiplexFlag();
+bool halGetDisplayMultiplexFlag();
 void halClearDisplayMultiplexFlag();
 void halInitDisplay(uint16_t interval);
 void callback();

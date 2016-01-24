@@ -1,13 +1,13 @@
 #include "hal.h"
 
 
-uint8_t multipleFlag = 0;
+bool multipleFlag = 0;
 int busPins[9] = {2,3,4,5,6,7,8,9,10};
 /* 	
 	first index ID do display
 	second index (I(nput power),A,B,C,D,E,F,G,P(oint))
 */
-int displayBusSeq[NUMBER_OF_DISPLAYS][NUMBER_OF_BUSES] = {{0,8,1,2,3,4,5,6,7},{1,0,8,2,3,4,5,6,7}};
+int displayBusSeq[NUMBER_OF_DISPLAYS][NUMBER_OF_BUSES] = {{0,8,1,2,3,4,5,6,7},{1,0,8,2,3,4,5,6,7},{2,0,1,8,3,4,5,6,7},{3,0,8,1,2,4,5,6,7},{4,3,2,1,0,8,5,6,7},{5,4,3,2,0,1,8,6,7}};
 
 void halTurnLedDisplayOn(uint8_t ledId,uint8_t displayId){
 
@@ -82,18 +82,18 @@ void halTurnSingleLedDisplayOn(char ledLetter,int displayId){
 
 void halInitDisplay(uint16_t interval){
 	//call Timer1 every 3ms tu update display
-	Timer1.initialize(interval*1000);         // initialize timer1, and set a 1/2 second period
+	Timer1.initialize(interval);         // initialize timer1, and set a 1/2 second period
 	Timer1.attachInterrupt(callback);  // attaches callback() as a timer overflow interrupt
 }
 
 void callback(){
-	multipleFlag = 1;
+	multipleFlag = true;
 }
 
-uint8_t halGetDisplayMultiplexFlag(){
+bool halGetDisplayMultiplexFlag(){
 	return multipleFlag;
 }
 
 void halClearDisplayMultiplexFlag(){
-	multipleFlag = 0;
+	multipleFlag = false;
 }

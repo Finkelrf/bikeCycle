@@ -1,6 +1,6 @@
 #include "display.h"
 
-#define REFRESH_INTERVAL 2
+#define DISPLAY_FREQ 100
 
 static uint8_t* findLedSeg(char c);
 
@@ -10,7 +10,7 @@ struct displayState
 	char info[NUMBER_OF_DISPLAYS];
 };
 
-uint8_t digitTable[11][8] = {  
+uint8_t digitTable[12][8] = {  
 	{ 0, 0, 0, 0, 0, 0, 1, 1 }, // = 0
 	{ 1, 0, 0, 1, 1, 1, 1, 1 }, // = 1
 	{ 0, 0, 1, 0, 0, 1, 0, 1 }, // = 2
@@ -21,7 +21,8 @@ uint8_t digitTable[11][8] = {
 	{ 0, 0, 0, 1, 1, 1, 1, 1 }, // = 7
 	{ 0, 0, 0, 0, 0, 0, 0, 1 }, // = 8
 	{ 0, 0, 0, 1, 1, 0, 0, 1 }, // = 9
-	{ 1, 1, 1, 1, 1, 1, 0, 1 } // = -
+	{ 1, 1, 1, 1, 1, 1, 0, 1 }, // = -
+	{ 1, 1, 1, 1, 1, 1, 1, 1 } // = 
 };
 
 struct displayState state;
@@ -60,12 +61,16 @@ static uint8_t* findLedSeg(char c){
 		case '-':
 			return digitTable[10];
 			break;
+		case ' ':
+			return digitTable[11];
+			break;
 	}
 	return NULL;
 }
 
 void displayInit(){
-	halInitDisplay(REFRESH_INTERVAL);
+	float period = 1000000/DISPLAY_FREQ/NUMBER_OF_DISPLAYS;
+	halInitDisplay(period);
 	state.currentlyOn = 0;
 	int i;
 	for (i = 0; i < NUMBER_OF_DISPLAYS; ++i)
@@ -75,11 +80,16 @@ void displayInit(){
 }
 
 void displayHandler(){
-	if(halGetDisplayMultiplexFlag()){
-		//shift display on
-		state.currentlyOn = (state.currentlyOn + 1)%NUMBER_OF_DISPLAYS;
-		displayWriteDigit(state.currentlyOn,state.info[state.currentlyOn]);
+	//shift display on
+	state.currentlyOn = (state.currentlyOn + 1)%NUMBER_OF_DISPLAYS;
+#ifdef DEBUG
+	if(state.currentlyOn == 2){
+		delayCalcStart(0);			
+	}else if(state.currentlyOn == 3){
+		delayCalcStop(0);
 	}
+#endif
+	displayWriteDigit(state.currentlyOn,state.info[state.currentlyOn]);
 	halClearDisplayMultiplexFlag();
 }
 
@@ -88,12 +98,20 @@ void displaySetInfo(char* info){
 	int i = 0;
 	int done = 0;
 	while(!done){
-		if(info[i] == '\0' || i == 6){
+		if(info[i] == '\0' || i == NUMBER_OF_DISPLAYS){
 			done = 1;
+			for (; i < NUMBER_OF_DISPLAYS; ++i)
+			{
+				state.info[i] = ' ';
+			}
 		}
 		else{
 			state.info[i] = info[i];
 			i++;
 		}
 	}
+}
+
+bool displayUpdateFlag(){
+	return halGetDisplayMultiplexFlag();
 }
