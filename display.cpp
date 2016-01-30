@@ -1,5 +1,7 @@
 #include "display.h"
 
+//#define HARDWARE_TIMER
+
 #define DISPLAY_FREQ 100
 
 static uint8_t* findLedSeg(char c);
@@ -113,5 +115,23 @@ void displaySetInfo(char* info){
 }
 
 bool displayUpdateFlag(){
+#ifdef HARDWARE_TIMER
 	return halGetDisplayMultiplexFlag();
+#else
+	if(!delayCalcIsRunning(1)){
+		delayCalcGivePermissionToRun(1);
+		delayCalcStart(1);
+	}else{
+		//period of display has passed
+		if(delayCalcShowTimePassed(1)>=1000/DISPLAY_FREQ/NUMBER_OF_DISPLAYS){
+			delayCalcStop(1);
+			delayCalcGivePermissionToRun(1);
+			delayCalcStart(1);
+			return true;
+		}else{
+			return false;
+		}
+	}
+	return false;
+#endif
 }

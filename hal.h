@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "TimerOne.h"
+#include "common.h"
 
 #define NUMBER_OF_BUSES 9
 #define NUMBER_OF_DISPLAYS 6
