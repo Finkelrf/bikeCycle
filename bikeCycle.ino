@@ -72,7 +72,7 @@ void loop() {
       sm = SM_IDLE;
       break;
     case SM_INTERPRETE_COMM:
-      if(comInterpreteCmd()){
+      if(comInterpreteCmdPreemptive()){
         comSetExecFlag();
         Serial.println("cmd found");
       }

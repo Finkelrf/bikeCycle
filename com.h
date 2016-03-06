@@ -20,6 +20,7 @@ bool comGetExecCommFlag();
 bool comInterpreteCmd();
 void comSetExecFlag();
 bool comInterpreteCmd();
+bool comInterpreteCmdPreemptive();
 
 
 #endif
