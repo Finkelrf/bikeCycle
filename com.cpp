@@ -7,19 +7,23 @@
 #define NUMBER_OF_CMDS 2
 #define END_CMD_CHAR ':'
 
+//circular buffer to store rcvd bytes
 char buffer[BUFFER_MAX_SIZE] = {'\0'};
 uint16_t writeBuffPtr = 0;
+uint16_t readBuffPtr = 0;
+
+//flags
 uint8_t comCommandRcvFlag = 0;
 bool execCommFlag = false;
 
-uint16_t readBuffPtr = 0;
+
 
 struct cmdInfo{
-	int cmdId = -1;	
-	char cmdData[15];
+	int id;	
+	char data[15];
 };
 
-struct cmdInfo cmdInfo;
+struct cmdInfo cmdInfo = {.id = -1};
 
 
 #ifdef BT_SOFTSERIAL
@@ -39,47 +43,100 @@ struct intComPreempState{
 	int cmdsIterator;
 	bool cmdFound;
 	int dataIterator;
+	int auxReadBuff;
+	int auxReadCmd;
 };
 struct intComPreempState stateInt = {.empty = true};
 
 static char btGetChar();
 
-bool comInterpreteCmdPreemptive(){
-	if(stateInt.empty){							//first iteration, it must be initialized
-		stateInt.cmd = &buffer[readBuffPtr];
-		stateInt.cmdsIterator = 0;
-		stateInt.empty = false;
-		stateInt.cmdFound = false;
-		stateInt.dataIterator = 0;
+bool comExecuteCmd(){
+	//Serial.println("exec cmd");
+	switch(cmdInfo.id){
+		case 0:
+			displaySetInfo(cmdInfo.data);
+			execCommFlag = false;
+			//Serial.println("set display");
+			cmdInfo.id = -1;
+			return true;
+			break;
+
+		case 1:
+
+			break;
+
+		default:
+			cmdInfo.id = -1;
+			return false;
+			break;
 	}
-	if(stateInt.cmd[readBuffPtr] != cmds[stateInt.cmdsIterator][readBuffPtr]){ //it is not the same letter
+}
+
+bool comInterpreteCmdPreemptive(){
+	bool ret = false;
+	if(stateInt.empty){							//first iteration, it must be initialized
+		stateInt.cmd = &buffer[readBuffPtr]; //point to the position of the first byte not read from the buffer 
+		stateInt.cmdsIterator = 0; //ptr to iterate in the cmd list
+		stateInt.empty = false; //flag to sinalize if is the first iteration
+		stateInt.cmdFound = false; //flag to sinalize if the END_CMD_CHAR was found
+		stateInt.dataIterator = 0;//ptr to write in data
+		stateInt.auxReadBuff = 0; //ptr to read the circular buffer
+		stateInt.auxReadCmd = 0; //ptr to read the cmd vector 
+	}
+	//Serial.print("anal --> ");
+	//Serial.println(stateInt.cmd[stateInt.auxReadBuff]);
+	if((stateInt.cmd[stateInt.auxReadBuff] != cmds[stateInt.cmdsIterator][stateInt.auxReadCmd])&&!stateInt.cmdFound){ //it is not the same letter
 		stateInt.cmdsIterator++;
+		stateInt.auxReadCmd++;
+		stateInt.auxReadBuff = 0;
 	}else{															//it is the same letter, it means the it could be the command
 		if(!stateInt.cmdFound){
-			if(stateInt.cmd[readBuffPtr++] == END_CMD_CHAR){	//check if is end of command char
-			Serial.println("Achou cmd");
-			cmdInfo.cmdId = stateInt.cmdsIterator;
+			if(stateInt.cmd[stateInt.auxReadBuff] == END_CMD_CHAR){	//check if is end of command char
+			//Serial.println("Char de fim de cmd");
+			cmdInfo.id = stateInt.cmdsIterator;
 			stateInt.cmdFound = true;
+			}else{
+				//keep comparing 
 			}
-		}else if(stateInt.cmdFound){
-			if(stateInt.cmd[readBuffPtr] != FINAL_BYTE){
-				cmdInfo.cmdData[stateInt.dataIterator++] = stateInt.cmd[readBuffPtr++];
-				Serial.println(cmdInfo.cmdData[stateInt.dataIterator-1]);
+			stateInt.auxReadCmd++;
+		}else if(stateInt.cmdFound){ //start to copy cmd data
+			if(stateInt.cmd[stateInt.auxReadBuff] != FINAL_BYTE){
+				//Serial.println("Not final");
+				cmdInfo.data[stateInt.dataIterator++] = stateInt.cmd[stateInt.auxReadBuff];
 			}else{ //all data has been copied
 				comCommandRcvFlag--; //clear flag
 				stateInt.empty = true;//
-				Serial.println(cmdInfo.cmdData);
-				return true;
+				//Serial.print("cmd data: ");
+				//Serial.println(cmdInfo.data);
+
+				//update readBuff
+				readBuffPtr +=(stateInt.auxReadBuff+1); //+1 because the FINAL_BYTE was not yet counted
+
+				//TODO teste de variaveis, remover
+				//Serial.print(writeBuffPtr);
+				//Serial.print(" ");
+				//Serial.print(readBuffPtr);
+				//Serial.print(" ");
+				//Serial.print(comCommandRcvFlag);			
+				ret = true;
 			}
 		}
+		//increment circular read Buffer
+		stateInt.auxReadBuff = ((stateInt.auxReadBuff+readBuffPtr + 1) % BUFFER_MAX_SIZE)-readBuffPtr;
+
+		//Serial.print("aux: ");
+		//Serial.println(stateInt.auxReadBuff);
+
+		//TODO implement a way to handle incorrect msgs
+		
 	}
-	return false;
+	return ret;
 
 }
 
 //deprecated - takes too long to execute and maker the processor restart
 bool comInterpreteCmd(){
-	Serial.println("entrou no interpretador");
+	//Serial.println("entrou no interpretador");
 	char *cmd = &buffer[readBuffPtr];
 	comCommandRcvFlag--;
 	int i;
@@ -93,18 +150,18 @@ bool comInterpreteCmd(){
 			}else{
 				//check if it end of comd
 				if(cmd[readBuffPtr] == END_CMD_CHAR){
-					Serial.println("Buscando data");
+					//Serial.println("Buscando data");
 					foundIt = true;
 					check = false;
 					bool done = false;
 					int j = 0;
 					while(!done){
 						if(cmd[readBuffPtr] != FINAL_BYTE){
-							cmdInfo.cmdData[j] = cmd[readBuffPtr];
+							cmdInfo.data[j] = cmd[readBuffPtr];
 							j++;
 						}else{
 							done = true;
-							Serial.println(cmdInfo.cmdData);
+							//Serial.println(cmdInfo.data);
 						}
 					}
 				}else{
@@ -113,17 +170,17 @@ bool comInterpreteCmd(){
 			}
 		}
 		if(foundIt){
-			cmdInfo.cmdId = i;
+			cmdInfo.id = i;
 			return true;
 		}
 	}
-	Serial.println("nao achou cmd");
-	cmdInfo.cmdId = -1;
+	//Serial.println("nao achou cmd");
+	cmdInfo.id = -1;
 	return false;
 }
 void comInit(){
 	Serial.begin(38400);
-  Serial.println("Bike Cycle 1.0");
+  	//Serial.println("Bike Cycle 1.0");
 
 #ifdef BT_SOFTSERIAL
 	bluetooth.begin(115200);
@@ -132,6 +189,15 @@ void comInit(){
 	bluetooth.println("U,9600,N");
 	bluetooth.begin(9600);
 #endif
+
+	//TODO teste, remover 
+
+	//Serial.print(writeBuffPtr);
+	//Serial.print(" ");
+	//Serial.print(readBuffPtr);
+	//Serial.print(" ");
+	//Serial.print(comCommandRcvFlag);
+
 }
 
 bool comGetIfDataRcv(){
@@ -153,18 +219,14 @@ bool comGetIfDataRcv(){
 char comReadByte(){
 	char *c = &buffer[writeBuffPtr];
 	buffer[writeBuffPtr] = btGetChar();
-	Serial.println(buffer[writeBuffPtr]);
+	//Serial.print(buffer[writeBuffPtr]);
+	//Serial.print(" pos ");
+	//Serial.println(writeBuffPtr);
 	//check if the command is fully received
 	if(buffer[writeBuffPtr]==FINAL_BYTE){
-		//Serial.println("Achou final byte");
 		comCommandRcvFlag++;		
-	}else{
-		Serial.println("NFB");
 	}
-	writeBuffPtr++;
-	if(writeBuffPtr >= BUFFER_MAX_SIZE){
-		writeBuffPtr = 0;
-	}
+	writeBuffPtr = (writeBuffPtr + 1) % BUFFER_MAX_SIZE;
 	return *c;
 } 
 

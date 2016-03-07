@@ -6,6 +6,7 @@
 
 #include <Arduino.h>
 #include "common.h"
+#include "display.h"
 #ifdef BT_SOFTSERIAL
 #include "SoftwareSerial.h"
 #endif
@@ -21,6 +22,7 @@ bool comInterpreteCmd();
 void comSetExecFlag();
 bool comInterpreteCmd();
 bool comInterpreteCmdPreemptive();
+bool comExecuteCmd();
 
 
 #endif

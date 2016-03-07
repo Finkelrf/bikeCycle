@@ -74,11 +74,11 @@ void loop() {
     case SM_INTERPRETE_COMM:
       if(comInterpreteCmdPreemptive()){
         comSetExecFlag();
-        Serial.println("cmd found");
       }
       sm = SM_IDLE;
       break;
     case SM_EXECUTE_COMM:
+      comExecuteCmd();
       sm = SM_IDLE;
       break;
   }
