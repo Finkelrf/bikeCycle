@@ -1,4 +1,4 @@
-#ifndef COM_H
+#ifndef COM_H	
 #define COM_H
 
 //#define BT_SOFTSERIAL
@@ -7,6 +7,7 @@
 #include <Arduino.h>
 #include "common.h"
 #include "display.h"
+#include "ledControl.h"
 #ifdef BT_SOFTSERIAL
 #include "SoftwareSerial.h"
 #endif

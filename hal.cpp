@@ -2,12 +2,12 @@
 
 
 bool multipleFlag = 0;
-int busPins[9] = {2,3,4,5,6,7,8,9,10};
+int busPins[9] = {A0,2,3,4,5,7,9,10,12};
 /* 	
 	first index ID do display
 	second index (I(nput power),A,B,C,D,E,F,G,P(oint))
 */
-int displayBusSeq[NUMBER_OF_DISPLAYS][NUMBER_OF_BUSES] = {{0,8,1,2,3,4,5,6,7},{1,0,8,2,3,4,5,6,7},{2,0,1,8,3,4,5,6,7},{3,0,8,1,2,4,5,6,7},{4,3,2,1,0,8,5,6,7},{5,4,3,2,0,1,8,6,7}};
+int displayBusSeq[NUMBER_OF_DISPLAYS][NUMBER_OF_BUSES] = {{0,8,1,2,3,4,5,6,7},{1,0,8,2,3,4,5,6,7},{2,0,1,8,3,4,5,6,7},{3,0,1,2,8,4,5,6,7},{4,0,1,2,3,8,5,6,7},{5,0,1,2,3,4,8,6,7}};
 
 void halTurnLedDisplayOn(uint8_t ledId,uint8_t displayId){
 

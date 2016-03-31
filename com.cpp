@@ -1,11 +1,13 @@
 #include "com.h"
 
 
-#define BUFFER_MAX_SIZE 30
+#define BUFFER_MAX_SIZE 60
 #define FINAL_BYTE 'p'
 
 #define NUMBER_OF_CMDS 2
 #define END_CMD_CHAR ':'
+
+#define CMD_DATA_BUFF 15
 
 //circular buffer to store rcvd bytes
 char buffer[BUFFER_MAX_SIZE] = {'\0'};
@@ -20,7 +22,7 @@ bool execCommFlag = false;
 
 struct cmdInfo{
 	int id;	
-	char data[15];
+	char data[CMD_DATA_BUFF];
 };
 
 struct cmdInfo cmdInfo = {.id = -1};
@@ -34,7 +36,16 @@ SoftwareSerial bluetooth(bluetoothTx, bluetoothRx);
 
 char cmds[][15] = {
 	"SET_DISPLAY:",
-	"SAY_HI:"
+	"RIGHT:",//turn right
+	"LEFT:",//turn left
+	"RDB1:",//take the 1st exit in the round about
+	"RDB2:",//take the 2nd exit in the round about
+	"RDB3:",//take the 3th exit in the round about
+	"RDB4:",//take the 4th exit in the round about
+	"STRAIGHT:",//keep going straight
+	"BACK:", //turn around
+	"DEMO:",
+	"PWM:",
 };
 
 struct intComPreempState{
@@ -49,24 +60,123 @@ struct intComPreempState{
 struct intComPreempState stateInt = {.empty = true};
 
 static char btGetChar();
+static void clrCmdData();
+
+static void clrCmdData(){
+	int i;
+	for(i=0;i<CMD_DATA_BUFF;i++){
+		cmdInfo.data[i] = '\0';
+	}
+}
 
 bool comExecuteCmd(){
 	//Serial.println("exec cmd");
 	switch(cmdInfo.id){
-		case 0:
+		case 0:														 //SET_DISPLAY
 			displaySetInfo(cmdInfo.data);
 			execCommFlag = false;
 			//Serial.println("set display");
 			cmdInfo.id = -1;
+			clrCmdData();
 			return true;
 			break;
 
-		case 1:
+		case 1:														//RIGHT
+			ledCtrlShowNavRight(atoi(cmdInfo.data));				
+			execCommFlag = false;
+			//Serial.println("RIGHT");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
+			break;
 
+		case 2:														//LEFT
+			ledCtrlShowNavLeft(atoi(cmdInfo.data));	
+			execCommFlag = false;
+			//Serial.println("LEFT");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
+			break;
+
+		case 3:														//RDB1
+			ledCtrlShowNavRDB1(atoi(cmdInfo.data));	
+			execCommFlag = false;
+			//Serial.println("RDB1");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
+			break;
+
+		case 4:														//RDB2
+			ledCtrlShowNavRDB2(atoi(cmdInfo.data));
+			execCommFlag = false;
+			//Serial.println("RDB2");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
+			break;
+
+		case 5:														//RDB3
+			ledCtrlShowNavRDB3(atoi(cmdInfo.data));
+			execCommFlag = false;
+			//Serial.println("RDB3");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
+			break;
+
+		case 6:														//RDB4
+			ledCtrlShowNavRDB4(atoi(cmdInfo.data));
+			execCommFlag = false;
+			//Serial.println("RDB4");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
+			break;
+
+		case 7:														//STRAIGHT
+			ledCtrlShowNavStraight();
+			execCommFlag = false;
+			//Serial.println("STRAIGHT");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
+			break;
+
+		case 8:														//BACK
+			ledCtrlShowNavBack();
+			execCommFlag = false;
+			//Serial.println("BACK");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
+			break;
+
+		case 9:														//BACK
+			startDemo();
+			execCommFlag = false;
+			//Serial.println("BACK");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
+			break;
+
+		case 10:														//BACK
+			ledCtrlSetBright(atoi(cmdInfo.data));
+			execCommFlag = false;
+			//Serial.println("BACK");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
 			break;
 
 		default:
+			TurnOffAllLeds();
+			execCommFlag = false;
+			//Serial.println("FAIL");
 			cmdInfo.id = -1;
+			clrCmdData();
 			return false;
 			break;
 	}
@@ -83,16 +193,20 @@ bool comInterpreteCmdPreemptive(){
 		stateInt.auxReadBuff = 0; //ptr to read the circular buffer
 		stateInt.auxReadCmd = 0; //ptr to read the cmd vector 
 	}
-	//Serial.print("anal --> ");
+	//Serial.print("-> ");
 	//Serial.println(stateInt.cmd[stateInt.auxReadBuff]);
+	//Serial.print("cmp ");
+	//Serial.println(cmds[stateInt.cmdsIterator][stateInt.auxReadCmd]);
 	if((stateInt.cmd[stateInt.auxReadBuff] != cmds[stateInt.cmdsIterator][stateInt.auxReadCmd])&&!stateInt.cmdFound){ //it is not the same letter
 		stateInt.cmdsIterator++;
-		stateInt.auxReadCmd++;
+		stateInt.auxReadCmd=0;
 		stateInt.auxReadBuff = 0;
 	}else{															//it is the same letter, it means the it could be the command
 		if(!stateInt.cmdFound){
 			if(stateInt.cmd[stateInt.auxReadBuff] == END_CMD_CHAR){	//check if is end of command char
-			//Serial.println("Char de fim de cmd");
+			//Serial.print("cmd ");
+			//Serial.print(stateInt.cmdsIterator);
+			//Serial.println(" encontrado");
 			cmdInfo.id = stateInt.cmdsIterator;
 			stateInt.cmdFound = true;
 			}else{
@@ -179,25 +293,20 @@ bool comInterpreteCmd(){
 	return false;
 }
 void comInit(){
-	Serial.begin(38400);
-  	//Serial.println("Bike Cycle 1.0");
+  	Serial.begin(9600); //if the BT module is in default 
+	Serial.print("AT+BAUD5");
+	delay(200);
+	Serial.begin(19200);
+	Serial.println();
+	Serial.println("Smart Bike");
 
 #ifdef BT_SOFTSERIAL
-	bluetooth.begin(115200);
-	bluetooth.print("$$$");
-	delay(100);
-	bluetooth.println("U,9600,N");
 	bluetooth.begin(9600);
+	bluetooth.print("AT+BAUD5");
+	delay(200);
+	bluetooth.begin(19200);
+	Serial.println("Smart Bike");
 #endif
-
-	//TODO teste, remover 
-
-	//Serial.print(writeBuffPtr);
-	//Serial.print(" ");
-	//Serial.print(readBuffPtr);
-	//Serial.print(" ");
-	//Serial.print(comCommandRcvFlag);
-
 }
 
 bool comGetIfDataRcv(){
@@ -251,7 +360,4 @@ void comSetExecFlag(){
 	execCommFlag = true;
 }
 
-void comExecuteCommand(){
-  
-}
 

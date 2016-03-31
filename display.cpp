@@ -10,9 +10,10 @@ struct displayState
 {
 	uint8_t currentlyOn;
 	char info[NUMBER_OF_DISPLAYS];
+	bool point[NUMBER_OF_DISPLAYS];
 };
 
-uint8_t digitTable[12][8] = {  
+uint8_t digitTable[][8] = {  
 	{ 0, 0, 0, 0, 0, 0, 1, 1 }, // = 0
 	{ 1, 0, 0, 1, 1, 1, 1, 1 }, // = 1
 	{ 0, 0, 1, 0, 0, 1, 0, 1 }, // = 2
@@ -24,23 +25,41 @@ uint8_t digitTable[12][8] = {
 	{ 0, 0, 0, 0, 0, 0, 0, 1 }, // = 8
 	{ 0, 0, 0, 1, 1, 0, 0, 1 }, // = 9
 	{ 1, 1, 1, 1, 1, 1, 0, 1 }, // = -
-	{ 1, 1, 1, 1, 1, 1, 1, 1 } // = 
+	{ 1, 1, 1, 1, 1, 1, 1, 1 }, // = 
+	{ 1, 0, 0, 1, 0, 0, 0, 1 },	// = k
+	{ 0, 1, 0, 1, 0, 1, 1, 1 }, // = m
+	{ 1, 1, 0, 1, 0, 0, 0, 1 }, // = h
+	{ 0, 1, 0, 0, 1, 0, 0, 1 },	// = s
+	{ 0, 0, 1, 1, 0, 0, 0, 1 },	// = p
+	{ 0, 1, 1, 0, 0, 0, 0, 1 }, // = e
+	{ 1, 0, 0, 0, 0, 1, 0, 1 }, // = d	
+	{ 1, 1, 1, 0, 0, 1, 0, 1 },	// = c
+	{ 1, 1, 0, 1, 1, 1, 1, 1 },	// = i
+	{ 0, 1, 1, 1, 0, 0, 1, 1 },	// = t
+	{ 0, 0, 0, 1, 0, 0, 0, 1 },	// = a
+	{ 1, 1, 0, 1, 0, 1, 0, 1 },	// = n 
+	{ 1, 1, 0, 0, 0, 1, 1, 1 },	// = u
+	{ 1, 1, 1, 1, 0, 1, 0, 1 }
 };
 
 struct displayState state;
 
 
-uint8_t displayWriteDigit(int displayId, char toWrite){
+uint8_t displayWriteDigit(int displayId, char toWrite,bool point){
 	uint8_t* ptr = findLedSeg(toWrite);
 	halResetDisplays();
 	halTurnOnDisplay(displayId);
-
 	int i;
-	for (i = 0; i < 8; ++i)
+	for (i = 0; i < 7; ++i)
 	{
 		if(ptr[i]==0){
 			halTurnLedDisplayOn(i,displayId);
 		}
+	}
+	if(point){
+		halTurnLedDisplayOn(7,displayId);
+	}else{
+
 	}
 	return 1;
 
@@ -58,13 +77,39 @@ static uint8_t* findLedSeg(char c){
 		case '7':
 		case '8':
 		case '9':
-			return digitTable[c - '0'];
-			break;
+			return digitTable[c - '0'];break;
 		case '-':
-			return digitTable[10];
-			break;
+			return digitTable[10];break;
 		case ' ':
-			return digitTable[11];
+			return digitTable[11];break;
+		case 'k':
+			return digitTable[12];break;
+		case 'm':
+			return digitTable[13];break;
+		case 'h':
+			return digitTable[14];break;
+		case 's':
+			return digitTable[15];break;
+		case 'p':
+			return digitTable[16];break;
+		case 'e':
+			return digitTable[17];break;
+		case 'd':
+			return digitTable[18];break;
+		case 'c':
+			return digitTable[19];break;
+		case 'i':
+			return digitTable[20];break;
+		case 't':
+			return digitTable[21];break;
+		case 'a':
+			return digitTable[22];break;
+		case 'n':
+			return digitTable[23];break;
+		case 'u':
+			return digitTable[24];break;
+		case 'r':
+			return digitTable[25];break;
 			break;
 	}
 	return NULL;
@@ -91,25 +136,46 @@ void displayHandler(){
 		delayCalcStop(0);
 	}
 #endif
-	displayWriteDigit(state.currentlyOn,state.info[state.currentlyOn]);
+	displayWriteDigit(state.currentlyOn,state.info[state.currentlyOn],state.point[state.currentlyOn]);
 	halClearDisplayMultiplexFlag();
 }
 
 
 void displaySetInfo(char* info){
-	int i = 0;
 	int done = 0;
+
+	//get the lenght of the string
+	int i;
+	int arrayLen = 0;
+	for(i=0;i<NUMBER_OF_DISPLAYS;i++){
+		if(info[i] == '\0')
+			break;
+		else
+			if(info[i] != '.' && info[i] != ',' )
+				arrayLen++;
+	}
+
+	//clear all display info
+	for (i=0; i < NUMBER_OF_DISPLAYS; ++i)
+	{
+		state.info[i] = ' ';
+		state.point[i] = false; 
+	}
+
+	i=0;
+	int iaux = i;
+
 	while(!done){
-		if(info[i] == '\0' || i == NUMBER_OF_DISPLAYS){
+		if(info[iaux] == '\0' || i == NUMBER_OF_DISPLAYS){
 			done = 1;
-			for (; i < NUMBER_OF_DISPLAYS; ++i)
-			{
-				state.info[i] = ' ';
-			}
-		}
-		else{
-			state.info[i] = info[i];
+		}else if(info[iaux] == '.' || info[iaux] == ','){
+			state.point[i+(NUMBER_OF_DISPLAYS-arrayLen-1)] = true; 
+			iaux++;
+		}else{
+			state.info[i+(NUMBER_OF_DISPLAYS-arrayLen)] = info[iaux];
+			state.point[i+(NUMBER_OF_DISPLAYS-arrayLen)] = false; 
 			i++;
+			iaux++;
 		}
 	}
 }

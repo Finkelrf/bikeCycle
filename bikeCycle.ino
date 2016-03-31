@@ -1,9 +1,9 @@
 #include "hal.h"
 #include "display.h"
-#include "TimerOne.h"
 #include "common.h"
 #include "delayCalc.h"
 #include "com.h"
+#include "ledControl.h"
 
 enum stateMachine
 {
@@ -18,11 +18,12 @@ enum stateMachine
 
 enum stateMachine sm = SM_INIT;
 
-#ifdef DEBUG  
+ 
 unsigned long previousMillis = 0;      
-unsigned long interval = 1000; 
-bool printou = false;
-#endif
+unsigned long interval = 250; 
+bool demoIsOn = false;
+int dist;
+int demoTurnCount;
 
 void printf(char *c){
   Serial.println(c);
@@ -30,10 +31,7 @@ void printf(char *c){
 
 
 void setup() {
-#ifdef DEBUG
-  delayCalcInit();
-  delayCalcGivePermissionToRun(0);
-#endif
+  previousMillis = millis();
 }
 
 void loop() {
@@ -43,7 +41,8 @@ void loop() {
       //initiate all modules of th system
       comInit();
       displayInit();
-      displaySetInfo("123456");
+      displaySetInfo("      ");
+      ledCtrlInit();
       sm = SM_IDLE;
       break;
     case SM_IDLE:
@@ -59,6 +58,7 @@ void loop() {
       }else{
         sm = SM_IDLE;
       }
+      checkDemo();
       break;
     case SM_FEED_APP:
       sm = SM_IDLE;
@@ -73,6 +73,7 @@ void loop() {
       break;
     case SM_INTERPRETE_COMM:
       if(comInterpreteCmdPreemptive()){
+        //Serial.println("CMD FOUND!!!");
         comSetExecFlag();
       }
       sm = SM_IDLE;
@@ -84,19 +85,52 @@ void loop() {
   }
 
 
-  
-
-#ifdef DEBUG
-  unsigned long currentMillis = millis(); 
-  if((currentMillis - previousMillis > interval)&&!printou) {
-    Serial.print("delay: ");
-    Serial.println(delayCalcGetDelay(0));
-    printou = true;
-    Serial.println(displayUpdateFlag());
-  }
-#endif
-
-
-
 }
 
+
+
+void startDemo(){
+  demoIsOn = true;
+  Serial.println("Starting Demo");
+  dist = random(25,30);
+  demoTurnCount = 4;
+}
+
+
+void checkDemo(){
+
+  unsigned long currentMillis = millis(); 
+  if((currentMillis - previousMillis > interval)&&demoIsOn) {
+    previousMillis = currentMillis;
+    dist--;
+    //update distance
+    char buff[6];
+    sprintf(buff, "%d", dist);
+    displaySetInfo(buff);
+
+    if(dist==0){
+      demoTurnCount--;
+      if(demoTurnCount==0){
+        demoIsOn = false;
+        TurnOffAllLeds();
+        displaySetInfo("      ");
+      }
+      dist = random(25,30); 
+    }
+    switch(demoTurnCount){
+      case 4:
+        ledCtrlShowNavRight(dist);
+        break;
+      case 3:
+        ledCtrlShowNavLeft(dist);
+        break;
+      case 2:
+        ledCtrlShowNavRDB2(dist);
+        break;
+      case 1:
+        ledCtrlShowNavRDB3(dist);
+        break;
+    }
+  }
+
+}
