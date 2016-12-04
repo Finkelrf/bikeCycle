@@ -46,6 +46,8 @@ char cmds[][15] = {
 	"BACK:", //turn around
 	"DEMO:",
 	"PWM:",
+	"ARROW_POS:",
+	"DISTANCE",
 };
 
 struct intComPreempState{
@@ -164,6 +166,24 @@ bool comExecuteCmd(){
 
 		case 10:														//BACK
 			ledCtrlSetBright(atoi(cmdInfo.data));
+			execCommFlag = false;
+			//Serial.println("BACK");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
+			break;
+
+		case 11:														//SET ARROW ANGLE
+			pointerCtrl_move(atoi(cmdInfo.data));
+			execCommFlag = false;
+			//Serial.println("BACK");
+			cmdInfo.id = -1;
+			clrCmdData();
+			return true;
+			break;
+
+		case 12:														//SET DISTANCE
+			pointerCtrl_setDistance(atoi(cmdInfo.data));
 			execCommFlag = false;
 			//Serial.println("BACK");
 			cmdInfo.id = -1;
@@ -305,7 +325,7 @@ void comInit(){
 	bluetooth.print("AT+BAUD5");
 	delay(200);
 	bluetooth.begin(19200);
-	Serial.println("Smart Bike");
+	Serial.println("Software Serial");
 #endif
 }
 

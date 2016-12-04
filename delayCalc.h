@@ -4,6 +4,9 @@
 #include "Arduino.h"
 #include "common.h"
 
+#define DELAY_CALC_DISPLAY 0
+#define DELAY_CALC_POINTER 4
+
 void delayCalcInit();
 void delayCalcGivePermissionToRun(uint8_t id);
 void delayCalcStart(uint8_t id);

@@ -4,12 +4,14 @@
 #include "delayCalc.h"
 #include "com.h"
 #include "ledControl.h"
+#include "pointerCtrl.h"
 
 enum stateMachine
 {
   SM_INIT,
   SM_IDLE,
   SM_UPDATE_DISPLAY,
+  SM_UPDATE_POINTER,
   SM_READ_SERIAL,
   SM_FEED_APP,
   SM_INTERPRETE_COMM,
@@ -35,7 +37,6 @@ void setup() {
 }
 
 void loop() {
-
   switch(sm){
     case SM_INIT:
       //initiate all modules of th system
@@ -43,12 +44,15 @@ void loop() {
       displayInit();
       displaySetInfo("      ");
       ledCtrlInit();
+      pointerCtrl_init();
       sm = SM_IDLE;
       break;
     case SM_IDLE:
       //check flags in order of priority
       if(displayUpdateFlag()){
         sm = SM_UPDATE_DISPLAY;
+      }else if(pointerUpdateFlag()){
+        sm = SM_UPDATE_POINTER;
       }else if(comGetIfDataRcv()){
         sm = SM_READ_SERIAL;
       }else if(comGetCommandRcvFlag()){
@@ -58,7 +62,7 @@ void loop() {
       }else{
         sm = SM_IDLE;
       }
-      checkDemo();
+      //checkDemo();
       break;
     case SM_FEED_APP:
       sm = SM_IDLE;
@@ -69,6 +73,10 @@ void loop() {
       break;
     case SM_UPDATE_DISPLAY:
       displayHandler();
+      sm = SM_IDLE;
+      break;
+    case SM_UPDATE_POINTER:
+      pointerHandler();
       sm = SM_IDLE;
       break;
     case SM_INTERPRETE_COMM:
@@ -83,7 +91,6 @@ void loop() {
       sm = SM_IDLE;
       break;
   }
-
 
 }
 

@@ -8,6 +8,7 @@
 #include "common.h"
 #include "display.h"
 #include "ledControl.h"
+#include "pointerCtrl.h"
 #ifdef BT_SOFTSERIAL
 #include "SoftwareSerial.h"
 #endif
