@@ -41,9 +41,9 @@ void loop() {
     case SM_INIT:
       //initiate all modules of th system
       comInit();
-      displayInit();
-      displaySetInfo("      ");
-      ledCtrlInit();
+      // displayInit();
+      // displaySetInfo("      ");
+      // ledCtrlInit();
       pointerCtrl_init();
       sm = SM_IDLE;
       break;
@@ -72,7 +72,7 @@ void loop() {
       sm = SM_IDLE;
       break;
     case SM_UPDATE_DISPLAY:
-      displayHandler();
+      // displayHandler();
       sm = SM_IDLE;
       break;
     case SM_UPDATE_POINTER:
@@ -106,38 +106,38 @@ void startDemo(){
 
 void checkDemo(){
 
-  unsigned long currentMillis = millis(); 
-  if((currentMillis - previousMillis > interval)&&demoIsOn) {
-    previousMillis = currentMillis;
-    dist--;
-    //update distance
-    char buff[6];
-    sprintf(buff, "%d", dist);
-    displaySetInfo(buff);
+  // unsigned long currentMillis = millis(); 
+  // if((currentMillis - previousMillis > interval)&&demoIsOn) {
+  //   previousMillis = currentMillis;
+  //   dist--;
+  //   //update distance
+  //   char buff[6];
+  //   sprintf(buff, "%d", dist);
+  //   displaySetInfo(buff);
 
-    if(dist==0){
-      demoTurnCount--;
-      if(demoTurnCount==0){
-        demoIsOn = false;
-        TurnOffAllLeds();
-        displaySetInfo("      ");
-      }
-      dist = random(25,30); 
-    }
-    switch(demoTurnCount){
-      case 4:
-        ledCtrlShowNavRight(dist);
-        break;
-      case 3:
-        ledCtrlShowNavLeft(dist);
-        break;
-      case 2:
-        ledCtrlShowNavRDB2(dist);
-        break;
-      case 1:
-        ledCtrlShowNavRDB3(dist);
-        break;
-    }
-  }
+  //   if(dist==0){
+  //     demoTurnCount--;
+  //     if(demoTurnCount==0){
+  //       demoIsOn = false;
+  //       TurnOffAllLeds();
+  //       displaySetInfo("      ");
+  //     }
+  //     dist = random(25,30); 
+  //   }
+  //   switch(demoTurnCount){
+  //     case 4:
+  //       ledCtrlShowNavRight(dist);
+  //       break;
+  //     case 3:
+  //       ledCtrlShowNavLeft(dist);
+  //       break;
+  //     case 2:
+  //       ledCtrlShowNavRDB2(dist);
+  //       break;
+  //     case 1:
+  //       ledCtrlShowNavRDB3(dist);
+  //       break;
+  //   }
+  // }
 
 }

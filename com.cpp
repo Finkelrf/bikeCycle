@@ -7,7 +7,7 @@
 #define NUMBER_OF_CMDS 2
 #define END_CMD_CHAR ':'
 
-#define CMD_DATA_BUFF 15
+#define CMD_DATA_BUFF 50
 
 //circular buffer to store rcvd bytes
 char buffer[BUFFER_MAX_SIZE] = {'\0'};
@@ -47,7 +47,7 @@ char cmds[][15] = {
 	"DEMO:",
 	"PWM:",
 	"ARROW_POS:",
-	"DISTANCE",
+	"DISTANCE:",
 };
 
 struct intComPreempState{
@@ -318,7 +318,7 @@ void comInit(){
 	delay(200);
 	Serial.begin(19200);
 	Serial.println();
-	Serial.println("Smart Bike");
+	Serial.println("Smart Bike 1.1");
 
 #ifdef BT_SOFTSERIAL
 	bluetooth.begin(9600);
